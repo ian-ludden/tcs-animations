@@ -8,6 +8,12 @@ FONT_FAMILY = "Monospace"
 ALL_CHARS = " ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 class Horspool(Scene):
+    """
+    Runs Horspool's string matching algorithm 
+    to search text for pattern. 
+    Returns the start index of the first occurrence of pattern in text, 
+    or -1 if pattern never appears. 
+    """
     def construct(self):
         text = "BARD LOVED BANANAS"
         pattern = "BA"
@@ -32,45 +38,74 @@ class Horspool(Scene):
             
             return shift_table
     
-        def run_horspool(text=text, pattern=pattern):
-            """
-            Runs Horspool's string matching algorithm 
-            to search text for pattern. 
-            Returns the start index of the first occurrence of pattern in text, 
-            or -1 if pattern never appears. 
-            """
-            shift_table = compute_shift_table(pattern)
+        
+            
+        shift_table = compute_shift_table(pattern)
+        pattern_length = len(pattern)
 
-            start = 0
-            pattern_length = len(pattern)
-
-            while start + pattern_length < len(text):
-                i = pattern_length - 1
-                while i >= 0 and pattern[i] == text[start + i]:
-                    i -= 1
-                if i == -1:
-                    return start
-                else:
-                    start += shift_table[ALL_CHARS.index(text[start + pattern_length - 1])]
-
-            return -1
-    
-        shift_table = compute_shift_table(pattern=pattern)
-        run_horspool(text=text, pattern=pattern)
-
-
+        start = 0
+        start_mob = Text(f"start = {start}", font=FONT_FAMILY)
+        answer_mob = Text("result = ?", font=FONT_FAMILY)
+        
         text_mob = Text(text, font=FONT_FAMILY, t2c={pattern: YELLOW})
         pattern_mob = Text(pattern, font=FONT_FAMILY)
 
         # Left-align text_mob and pattern_mob
-        text_group = Group(text_mob, pattern_mob)
+        text_group = VGroup(text_mob, pattern_mob)
         text_group.arrange(DOWN, center=False, aligned_edge=LEFT)
+        self.play(Write(text_group))
 
-        self.play(Write(text_mob))
-        self.play(Write(pattern_mob))
-        self.wait(3)
-        self.play(text_mob.animate.set_color_by_t2c({pattern: WHITE}))
-        self.wait(1)
+        # Display start and answer
+        start_mob = Text(f"start = {start}", font=FONT_FAMILY)
+        info_group = VGroup(start_mob, answer_mob)
+        info_group.arrange(DOWN, center=False, aligned_edge=LEFT)
+        info_group.to_corner(UL)
+        self.play(Write(info_group))
+
+        while start + pattern_length < len(text):
+            i = pattern_length - 1
+
+            while i >= 0 and pattern[i] == text[start + i]:
+                i -= 1
+            if i == -1:
+                answer_mob = Text(f"result = {start}", font=FONT_FAMILY)
+                break
+            else:
+                start += shift_table[ALL_CHARS.index(text[start + pattern_length - 1])]
+
+            # Left-align text_mob and pattern_mob
+            self.play(FadeOut(text_group))
+            text_group = VGroup(text_mob, pattern_mob)
+            text_group.arrange(DOWN, center=False, aligned_edge=LEFT)
+            self.play(Write(text_group))
+
+            # Display start and answer
+            self.play(FadeOut(info_group))
+            start_mob = Text(f"start = {start}", font=FONT_FAMILY)
+            info_group = VGroup(start_mob, answer_mob)
+            info_group.arrange(DOWN, center=False, aligned_edge=LEFT)
+            info_group.to_corner(UL)
+            self.play(Write(info_group))
+            
+            # Wait before next iteration
+            self.wait(2)
+
+
+        if answer_mob.get_text() == "result = ?":
+            answer_mob = Text(f"result = -1", font=FONT_FAMILY)
+
+        self.play(FadeOut(start_mob))
+
+        # Left-align text_mob and pattern_mob
+        text_group = VGroup(text_mob, pattern_mob)
+        text_group.arrange(DOWN, center=False, aligned_edge=LEFT)
+        self.play(Write(text_group))
+
+        # Display answer
+        info_group = VGroup(answer_mob)
+        info_group.arrange(DOWN, center=False, aligned_edge=LEFT)
+        info_group.to_corner(UL)
+        self.play(Write(info_group))
 
         
         # text_mob_copy = text_mob.copy()
