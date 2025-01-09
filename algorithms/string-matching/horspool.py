@@ -125,8 +125,21 @@ class Horspool(Scene):
             pattern_mob.shift((start_indices[index-1] * CHAR_WIDTH) * RIGHT)
             self.add(pattern_mob)
 
+            # Create a rectangle that flashes around the characters being compared
+            flash_rect = Rectangle(width=CHAR_WIDTH, height=text_mob.get_height() * 3.5, stroke_width=2, color=WHITE)
+            flash_rect.next_to(text_mob, UP, aligned_edge=LEFT)
+            flash_rect.shift((((start_indices[index-1] + i_values[index-1]) * CHAR_WIDTH) * RIGHT) - 0.04)
+            flash_rect.shift(1.65 * DOWN)
+            
+            self.play(Create(flash_rect), run_time=0.25)
             self.play(Indicate(text_mob[start_indices[index-1] + i_values[index-1]]))
             self.play(Indicate(pattern_mob[i_values[index-1]]))
+            self.play(FadeOut(flash_rect), run_time=0.25)
+            
+            
+
+            # self.play(ShowPassingFlash(flash_rect, time_width=0.5, run_time=0.5))
+
 
             self.wait(0.4 if (index < len(start_indices) 
                               and start_indices[index] == start_indices[index - 1]) 
