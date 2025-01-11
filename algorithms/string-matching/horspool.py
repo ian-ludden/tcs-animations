@@ -5,7 +5,7 @@ from manim import *
 import numpy as np
 
 FONT_FAMILY = "Monospace"
-ALL_CHARS = " ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+ALL_CHARS = "_ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 class Horspool(Scene):
     """
@@ -15,10 +15,17 @@ class Horspool(Scene):
     or -1 if pattern never appears. 
     """
     def construct(self):
-        # text = "BARD LOVED BANANAS"
-        # pattern = "BAN"
-        text = "BAAAABAAABAAAAAAAAAABAAAAAABAAAA"
-        pattern = "BAAAAAA"
+        # text = "IAMANANTELOPE_"
+        # pattern = "ANT"
+        # text = "BARD_LOVED_BANANAS"
+        # pattern = "NANA"
+        # text = "BARD_LOVED_BANANAS"
+        # pattern = "NAB"
+        # text = "BABAABAAAAAAABAAABA_"
+        # pattern = "BAAA"
+        text = "BEETLE_AND_A_NEEDLE_IN_A_HAYSTACK"
+        pattern = "NEEDLE"
+        
 
         def compute_shift_table(pattern=pattern):
             """
@@ -72,9 +79,11 @@ class Horspool(Scene):
                     answer_values[-1] = start
                     return [start_indices, i_values, answer_values]
                 else:
-                    print("MISMATCH: ", text[start + i], " != ", pattern[i])
-                    print("SHIFT FOR ", text[start + i], " = ", shift_table[ALL_CHARS.index(text[start + i])]) 
-                    start += shift_table[ALL_CHARS.index(text[start + i])] - progress
+                    # print("MISMATCH: ", text[start + i], " != ", pattern[i])
+                    c = text[start + pattern_length - 1]
+                    shift_amount = shift_table[ALL_CHARS.index(c)]
+                    # print("SHIFT FOR ", c, " = ", shift_amount) 
+                    start += shift_amount # - progress
                     
             
             start_indices.append(start)
@@ -99,8 +108,6 @@ class Horspool(Scene):
             answer_mob_transformed = Text(f"result = {answer}", font=FONT_FAMILY, font_size=info_font_size)
             info_groups.append(VGroup(start_mob_transformed, i_mob_transformed, answer_mob_transformed))
         
-        # print(len(info_groups))
-
         for info_group in info_groups:
             info_group.arrange(DOWN, center=False, aligned_edge=LEFT)
             info_group.to_corner(UL)
@@ -110,15 +117,17 @@ class Horspool(Scene):
         text_mob = Text(text, font=FONT_FAMILY, t2c={pattern: YELLOW})
         # Add pattern_mob left-aligned below text_mob
         pattern_mob = Text(pattern, font=FONT_FAMILY).next_to(text_mob, DOWN, aligned_edge=LEFT)
-        pattern_mob_pos = pattern_mob.get_left()
-        CHAR_WIDTH = text_mob.get_width() / len(text) # or, text_mob[0].width
-        # text_group.arrange(DOWN, center=False, aligned_edge=LEFT)
+        # pattern_mob_pos = pattern_mob.get_left()
+        CHAR_WIDTH = text_mob.width / len(text) # or, text_mob[0].width
         self.play(Write(text_mob))
         self.play(Write(pattern_mob))
 
         self.play(Write(info_groups[0]))
+
+        self.play(text_mob.animate.set_color(WHITE), run_time=0.1)
+
         
-        for index in range(1, len(info_groups)):
+        for index in range(1, len(info_groups) - 1):
             self.remove(info_groups[index-1])
             self.add(info_groups[index])
             pattern_mob.next_to(text_mob, DOWN, aligned_edge=LEFT)
@@ -126,29 +135,49 @@ class Horspool(Scene):
             self.add(pattern_mob)
 
             # Create a rectangle that flashes around the characters being compared
-            flash_rect = Rectangle(width=CHAR_WIDTH, height=text_mob.get_height() * 3.5, stroke_width=2, color=WHITE)
-            flash_rect.next_to(text_mob, UP, aligned_edge=LEFT)
-            flash_rect.shift((((start_indices[index-1] + i_values[index-1]) * CHAR_WIDTH) * RIGHT) - 0.04)
-            flash_rect.shift(1.65 * DOWN)
+            rect_current_comp = Rectangle(width=CHAR_WIDTH, height=text_mob.height * 3.5, stroke_width=2, color=WHITE)
+            rect_current_comp.next_to(text_mob, UP, aligned_edge=LEFT)
+            rect_current_comp.shift((((start_indices[index-1] + i_values[index-1]) * CHAR_WIDTH) * RIGHT) - 0.04)
+            rect_current_comp.shift(2 * DOWN)
             
-            self.play(Create(flash_rect), run_time=0.25)
-            self.play(Indicate(text_mob[start_indices[index-1] + i_values[index-1]]))
-            self.play(Indicate(pattern_mob[i_values[index-1]]))
-            self.play(FadeOut(flash_rect), run_time=0.25)
+            self.play(Create(rect_current_comp), run_time=0.25)
+            # self.play(ShowPassingFlash(rect_current_comp, time_width=0.5, run_time=0.5))
+            # self.play(Indicate(text_mob[start_indices[index-1] + i_values[index-1]]), 
+            #           Indicate(pattern_mob[i_values[index-1]]))
+
+            # If there is a character match, set the color of the matched characters to green
+            if text[start_indices[index-1] + i_values[index-1]] == pattern[i_values[index-1]]:
+                self.play(text_mob[start_indices[index-1] + i_values[index-1]].animate.set_color(YELLOW),
+                          pattern_mob[i_values[index-1]].animate.set_color(YELLOW), run_time=0.1) # , run_func=linear)
+            else:
+                self.play(text_mob[start_indices[index-1] + i_values[index-1]].animate.set_color(RED),
+                          pattern_mob[i_values[index-1]].animate.set_color(RED), run_time=0.1)
+            self.play(FadeOut(rect_current_comp), run_time=0.25)
             
-            
+            # If the start index changes, wait longer before next iteration and reset colors
+            if (index < len(start_indices) and start_indices[index] == start_indices[index - 1]):
+                self.wait(0.4)
+            else:
+                self.play(text_mob.animate.set_color(WHITE), pattern_mob.animate.set_color(WHITE), run_time=0.1)
+                self.wait(0.8)
 
-            # self.play(ShowPassingFlash(flash_rect, time_width=0.5, run_time=0.5))
+        self.remove(info_groups[-2])
+        self.add(info_groups[-1])
 
-
-            self.wait(0.4 if (index < len(start_indices) 
-                              and start_indices[index] == start_indices[index - 1]) 
-                          else 0.8)
+        characters_to_gray_out = text_mob[0:start_indices[-1]] + text_mob[start_indices[-1] + len(pattern):]
+        if (answer_values[-1] == -1):
+            characters_to_gray_out = text_mob
+        self.play(*(character.animate.set_color(GRAY) for character in characters_to_gray_out), run_time=0.25)
+        self.play(FadeOut(pattern_mob))
 
         self.wait(1)
-        self.play(FadeOut(info_groups[-1][1]))
-        if answer_values[-1] != -1:
-            self.play(text_mob[start_indices[-1]:start_indices[-1] + len(pattern)].animate.set_color(GREEN))
+        self.play(FadeOut(info_groups[-1][:-1]))
+        final_result = info_groups[-1][-1].copy()
+        self.add(final_result)
+        self.remove(info_groups[-1][-1])
+        self.play(final_result.animate.move_to([0, 2, 0]))
+        self.play(Indicate(final_result), run_time=1.0)
+        
         self.wait(3)
 
 
